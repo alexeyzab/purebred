@@ -7,7 +7,6 @@
 
 module UI.Actions (
   Scrollable(..)
-  , backToIndex
   , quit
   , focus
   , done
@@ -19,7 +18,6 @@ module UI.Actions (
   , mailIndexUp
   , mailIndexDown
   , switchComposeEditor
-  , composeMail
   , replyMail
   , scrollUp
   , scrollDown
@@ -28,7 +26,6 @@ module UI.Actions (
   , continue
   , chain
   , chain'
-  , viewHelp
   , setTags
   , addTags
   , removeTags
@@ -79,6 +76,8 @@ instance ModeTransition 'BrowseThreads 'SearchThreads where
 
 instance ModeTransition 'BrowseMail 'ManageMailTags where
 
+instance ModeTransition 'BrowseThreads 'ManageThreadTags where
+
 instance ModeTransition 'ViewMail 'BrowseMail where
 
 instance ModeTransition 'BrowseThreads 'BrowseMail where
@@ -87,9 +86,19 @@ instance ModeTransition 'ManageThreadTags 'BrowseThreads where
 
 instance ModeTransition 'BrowseMail 'BrowseThreads  where
 
-instance ModeTransition 'BrowseMail 'Help  where
-
 instance ModeTransition 'SearchThreads 'BrowseThreads  where
+
+instance ModeTransition 'BrowseThreads 'GatherHeaders where
+
+instance ModeTransition 'BrowseMail 'GatherHeaders where
+
+instance ModeTransition 'GatherHeaders 'BrowseThreads where
+
+instance ModeTransition 'ComposeEditor 'BrowseThreads where
+
+instance ModeTransition 'Help 'BrowseThreads where
+
+instance ModeTransition s 'Help where  -- help can be reached from any mode
 
 -- | An action - typically completed by a key press (e.g. Enter) - and it's
 -- contents are used to be applied to an action.
@@ -149,6 +158,9 @@ instance Focusable 'BrowseMail where
 instance Focusable 'BrowseThreads where
   switchFocus _ = pure . set asAppMode BrowseThreads
 
+instance Focusable 'GatherHeaders where
+  switchFocus _ = pure . set asAppMode GatherHeaders
+
 instance Focusable 'Help where
   switchFocus _ = pure . set asAppMode Help
 
@@ -172,6 +184,9 @@ instance HasMode 'ManageMailTags where
 
 instance HasMode 'BrowseThreads where
   mode _ = BrowseThreads
+
+instance HasMode 'GatherHeaders where
+  mode _ = GatherHeaders
 
 instance HasMode 'Help where
   mode _ = Help
@@ -211,13 +226,6 @@ focus = Action ("switch mode to " <> show (mode (Proxy :: Proxy a))) (switchFocu
 -- mode switch is required
 noop :: Action ctx AppState
 noop = Action "" pure
-
-backToIndex :: Action ctx AppState
-backToIndex =
-    Action
-    { _aDescription = "back to the index"
-    , _aAction = pure . set asAppMode BrowseThreads
-    }
 
 viewHelp :: Action ctx AppState
 viewHelp = Action "view all key bindings" (pure . set asAppMode Help)
