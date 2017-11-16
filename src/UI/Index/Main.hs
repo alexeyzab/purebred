@@ -99,7 +99,7 @@ mainEvent s =
         ManageThreadTags ->
             handleEvent
                 (view (asConfig . confIndexView . ivManageThreadTagsKeybindings) s)
-                searchInputEventDefault
+                (\_ e -> M.continue =<< T.handleEventLensed s (asMailIndex . miThreadTagsEditor) E.handleEditorEvent e)
                 s
         ManageMailTags ->
             handleEvent
