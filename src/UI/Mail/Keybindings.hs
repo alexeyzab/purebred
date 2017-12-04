@@ -15,6 +15,7 @@ displayMailKeybindings =
     , Keybinding (V.EvKey V.KBS []) (scrollUp `chain` continue)
     , Keybinding (V.EvKey (V.KChar ' ') []) (scrollDown `chain` continue)
     , Keybinding (V.EvKey (V.KChar 'h') []) (toggleHeaders `chain` continue)
+    , Keybinding (V.EvKey (V.KChar 'v') []) (noop `chain'` (focus :: Action 'BrowseAttachments AppState) `chain` continue)
     ]
 
 displayIndexKeybindings :: [Keybinding 'BrowseMail (Brick.Next AppState)]

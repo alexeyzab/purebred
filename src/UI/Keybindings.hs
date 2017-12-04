@@ -69,6 +69,10 @@ instance EventHandler 'ViewMail where
                           (\kb -> view (kbAction . aAction) kb s)
                           (lookupKeybinding e $ view (asConfig . confMailView . mvIndexKeybindings) s)
 
+instance EventHandler 'BrowseAttachments where
+  keybindingsL _ = asConfig . confMailView . mvBrowseAttachmentsKeybindings
+  fallbackHandler _ s e = Brick.continue =<< Brick.handleEventLensed s (asMailView . mvListOfAttachments) L.handleListEvent e
+
 instance EventHandler 'ComposeEditor where
   keybindingsL _ = asConfig . confComposeView . cvKeybindings
   fallbackHandler _ s _ = Brick.continue s

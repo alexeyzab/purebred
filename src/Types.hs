@@ -27,6 +27,7 @@ data Mode
     | BrowseThreads  -- ^ input focus goes to navigating the list of threads
     | SearchThreads   -- ^ input focus goes to manipulating the notmuch search (main screen)
     | ViewMail   -- ^ focus is on the screen showing the entire mail
+    | BrowseAttachments  -- ^ show attachments of a mail
     | GatherHeadersFrom   -- ^ focus is on the command line to gather input for composing an e-mail
     | GatherHeadersTo   -- ^ focus is on the command line to gather input for composing an e-mail
     | GatherHeadersSubject   -- ^ focus is on the command line to gather input for composing an e-mail
@@ -41,6 +42,7 @@ data Name =
     SearchThreadsEditor
     | ListOfMails
     | ListOfThreads
+    | ListOfAttachments
     | ScrollingMailView
     | ComposeFrom
     | ComposeTo
@@ -84,6 +86,7 @@ data HeadersState = ShowAll | Filtered
 data MailView = MailView
     { _mvMail :: Maybe ParsedMail
     , _mvHeadersState :: HeadersState
+    , _mvListOfAttachments :: L.List Name Attachment
     }
 
 mvMail :: Lens' MailView (Maybe ParsedMail)
@@ -91,6 +94,9 @@ mvMail = lens _mvMail (\mv pm -> mv { _mvMail = pm })
 
 mvHeadersState :: Lens' MailView HeadersState
 mvHeadersState = lens _mvHeadersState (\mv hs -> mv { _mvHeadersState = hs })
+
+mvListOfAttachments :: Lens' MailView (L.List Name Attachment)
+mvListOfAttachments = lens _mvListOfAttachments (\mv l -> mv { _mvListOfAttachments = l })
 
 data Compose = Compose
     { _cTmpFile :: Maybe String
@@ -216,22 +222,26 @@ data MailViewSettings = MailViewSettings
     , _mvHeadersToShow       :: CI.CI T.Text -> Bool
     , _mvKeybindings         :: [Keybinding 'ViewMail (Next AppState)]
     , _mvIndexKeybindings    :: [Keybinding 'BrowseMail (Next AppState)]
+    , _mvBrowseAttachmentsKeybindings :: [Keybinding 'BrowseAttachments (Next AppState)]
     }
 
 mvIndexRows :: Lens' MailViewSettings Int
-mvIndexRows f (MailViewSettings a b c d e) = fmap (\a' -> MailViewSettings a' b c d e) (f a)
+mvIndexRows = lens _mvIndexRows (\mv x -> mv { _mvIndexRows = x})
 
 mvPreferredContentType :: Lens' MailViewSettings T.Text
-mvPreferredContentType f (MailViewSettings a b c d e) = fmap (\b' -> MailViewSettings a b' c d e) (f b)
+mvPreferredContentType = lens _mvPreferedContentType (\mv x -> mv { _mvPreferedContentType = x})
 
 mvHeadersToShow :: Getter MailViewSettings (CI.CI T.Text -> Bool)
-mvHeadersToShow = to (\(MailViewSettings _ _ h _ _) -> h)
+mvHeadersToShow = to (\(MailViewSettings _ _ h _ _ _) -> h)
 
 mvKeybindings :: Lens' MailViewSettings [Keybinding 'ViewMail (Next AppState)]
-mvKeybindings f (MailViewSettings a b c d e) = fmap (\d' -> MailViewSettings a b c d' e) (f d)
+mvKeybindings = lens _mvKeybindings (\mv x -> mv { _mvKeybindings = x })
 
 mvIndexKeybindings :: Lens' MailViewSettings [Keybinding 'BrowseMail (Next AppState)]
-mvIndexKeybindings f (MailViewSettings a b c d e) = fmap (\e' -> MailViewSettings a b c d e') (f e)
+mvIndexKeybindings = lens _mvIndexKeybindings (\mv x -> mv { _mvIndexKeybindings= x })
+
+mvBrowseAttachmentsKeybindings :: Lens' MailViewSettings [Keybinding 'BrowseAttachments (Next AppState)]
+mvBrowseAttachmentsKeybindings = lens _mvBrowseAttachmentsKeybindings (\mv x -> mv { _mvBrowseAttachmentsKeybindings = x })
 
 -- | Overall application state
 data AppState = AppState
@@ -297,6 +307,17 @@ data ParsedMail
     | RFC2822 [Header]
               Body
     deriving (Show,Eq)
+
+data Attachment = Attachment
+    { _aFileName :: T.Text
+    , _aMimeType :: T.Text
+    } deriving (Show)
+
+aFileName :: Lens' Attachment T.Text
+aFileName = lens _aFileName (\a x -> a { _aFileName = x})
+
+aMimeType :: Lens' Attachment T.Text
+aMimeType = lens _aMimeType (\a x -> a { _aMimeType = x})
 
 -- | an email from the notmuch database
 data NotmuchMail = NotmuchMail

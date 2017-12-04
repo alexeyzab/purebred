@@ -22,6 +22,7 @@ import UI.Index.Main (drawMain)
 import UI.Actions (initialCompose)
 import UI.Mail.Main (drawMail)
 import UI.Help.Main (drawHelp)
+import UI.Attachments.Main (drawAttachments)
 import Types
 
 drawUI :: AppState -> [Widget Name]
@@ -33,6 +34,7 @@ drawUI s =
         ManageMailTags -> drawMain s
         ManageThreadTags -> drawMain s
         ViewMail -> drawMail s
+        BrowseAttachments -> drawAttachments s
         GatherHeadersFrom -> drawInteractiveHeaders s
         GatherHeadersTo -> drawInteractiveHeaders s
         GatherHeadersSubject -> drawInteractiveHeaders s
@@ -48,6 +50,7 @@ appEvent s (T.VtyEvent ev) =
     ManageMailTags -> dispatch (Proxy :: Proxy 'ManageMailTags) s ev
     ManageThreadTags -> dispatch (Proxy :: Proxy 'ManageThreadTags) s ev
     ViewMail -> dispatch (Proxy :: Proxy 'ViewMail) s ev
+    BrowseAttachments -> dispatch (Proxy :: Proxy 'BrowseAttachments) s ev
     GatherHeadersFrom -> dispatch (Proxy :: Proxy 'GatherHeadersFrom) s ev
     GatherHeadersTo -> dispatch (Proxy :: Proxy 'GatherHeadersTo) s ev
     GatherHeadersSubject -> dispatch (Proxy :: Proxy 'GatherHeadersSubject) s ev
@@ -69,7 +72,7 @@ initialState conf = do
                 (E.editorText SearchThreadsEditor Nothing searchterms)
                 (E.editorText ManageMailTagsEditor Nothing "")
                 (E.editorText ManageThreadTagsEditor Nothing "")
-          mv = MailView Nothing Filtered
+          mv = MailView Nothing Filtered (L.list ListOfAttachments Vector.empty 1)
         in pure $ AppState conf mi mv initialCompose BrowseThreads Nothing
 
 theApp :: AppState -> M.App AppState e Name

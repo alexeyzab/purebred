@@ -57,7 +57,7 @@ import Data.Text.Zipper (currentLine, gotoEOL, insertMany, clearZipper)
 import qualified Storage.Notmuch as Notmuch
        (getThreadMessages, getThreads, addTags, setTags, removeTags,
         getTags, ManageTags(..))
-import Storage.ParsedMail (parseMail, getTo, getFrom, getSubject)
+import Storage.ParsedMail (parseMail, getTo, getFrom, getSubject, getAttachments)
 import Types
 import Error
 
@@ -106,6 +106,8 @@ instance ModeTransition 'GatherHeadersSubject 'BrowseThreads where
 instance ModeTransition 'ComposeEditor 'BrowseThreads where
 
 instance ModeTransition 'Help 'BrowseThreads where
+
+instance ModeTransition 'ViewMail 'BrowseAttachments where
 
 instance ModeTransition s 'Help where  -- help can be reached from any mode
 
@@ -187,6 +189,9 @@ instance Focusable 'BrowseThreads where
 instance Focusable 'Help where
   switchFocus _ = pure . set asAppMode Help
 
+instance Focusable 'BrowseAttachments where
+  switchFocus _ = \s -> pure $ maybe s (prepareListOfAttachments s) (view (asMailView . mvMail) s)
+
 -- | Problem: How to chain actions, which operate not on the same mode, but a
 -- mode switched by the previous action?
 class HasMode (a :: Mode) where
@@ -219,6 +224,9 @@ instance HasMode 'GatherHeadersTo where
 
 instance HasMode 'ManageThreadTags where
   mode _ = ManageThreadTags
+
+instance HasMode 'BrowseAttachments where
+  mode _ = BrowseAttachments
 
 -- | class to handle updating mails and threads in their designated lists
 --
@@ -453,6 +461,11 @@ setTagEditor s (_, m) =
     let tags = intercalate "," $ Notmuch.getTags m
         widget = if view asAppMode s == ManageMailTags then (asMailIndex . miMailTagsEditor) else (asMailIndex . miThreadTagsEditor)
     in over (widget . E.editContentsL) (insertMany tags . clearZipper) s
+
+prepareListOfAttachments :: AppState -> ParsedMail -> AppState
+prepareListOfAttachments s pmail =
+  s & set (asMailView . mvListOfAttachments . L.listElementsL) (getAttachments pmail)
+  . set asAppMode BrowseAttachments
 
 replyToMail :: AppState -> T.EventM Name AppState
 replyToMail s =

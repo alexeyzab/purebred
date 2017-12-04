@@ -36,6 +36,8 @@ library
                      , UI.Mail.Keybindings
                      , UI.Help.Main
                      , UI.Help.Keybindings
+                     , UI.Attachments.Main
+                     , UI.Attachments.Keybindings
                      , Config.Main
                      , Storage.Notmuch
                      , Storage.ParsedMail

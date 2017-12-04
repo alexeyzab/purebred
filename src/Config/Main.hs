@@ -21,6 +21,7 @@ import UI.Index.Keybindings
         manageMailTagsKeybindings)
 import UI.Mail.Keybindings (displayMailKeybindings, displayIndexKeybindings)
 import UI.Help.Keybindings (helpKeybindings)
+import UI.Attachments.Keybindings (browseAttachmentsKeybindings)
 import Types
 import Storage.Notmuch (getDatabasePath)
 
@@ -99,6 +100,7 @@ defaultConfig =
       , _mvHeadersToShow = (`elem` ["subject", "to", "from"])
       , _mvKeybindings = displayMailKeybindings
       , _mvIndexKeybindings = displayIndexKeybindings
+      , _mvBrowseAttachmentsKeybindings = browseAttachmentsKeybindings
       }
     , _confIndexView = IndexViewSettings
       { _ivBrowseThreadsKeybindings = browseThreadsKeybindings
