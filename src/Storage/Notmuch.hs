@@ -9,6 +9,7 @@ import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.Except (void, MonadError, throwError)
 import qualified Data.ByteString as B
 import Data.Traversable (traverse)
+import Data.Foldable (traverse_)
 import Data.List (union, notElem)
 import Data.Maybe (fromMaybe)
 import qualified Data.Vector as Vec
@@ -24,9 +25,15 @@ import Notmuch.Util (bracketT)
 
 import Error
 
-class ManageTags a where
-  tags :: Lens' a [T.Text]
-  writeTags :: (MonadError Error m, MonadIO m) => FilePath -> a -> m a
+class ManageTags a  where
+    tags :: Lens' a [T.Text]
+    writeTags
+        :: (MonadError Error m, MonadIO m)
+        => FilePath -- ^ database path
+        -> [T.Text] -- ^ tags
+        -> ([T.Text] -> NotmuchMail -> NotmuchMail)  -- ^ operation
+        -> a  -- ^ item to set tags on
+        -> m a
 
 setTags :: (ManageTags a) => [T.Text] -> a -> a
 setTags tgs = set tags tgs
@@ -78,24 +85,31 @@ mailFilepath m dbpath =
 setNotmuchMailTags
   :: (MonadError Error m, MonadIO m)
   => FilePath
+  -> [T.Text]
+  -> ([T.Text] -> NotmuchMail -> NotmuchMail)
   -> NotmuchMail
   -> m NotmuchMail
-setNotmuchMailTags dbpath m = do
-  nmtags <- toNotmuchTags (view mailTags m)
-  bracketT (Notmuch.databaseOpen dbpath) Notmuch.databaseDestroy (tagsToMessage nmtags (view mailId m))
-  pure m
+setNotmuchMailTags dbpath tgs op m = do
+  let m' = op tgs m
+  nmtags <- toNotmuchTags (view mailTags m')
+  bracketT (Notmuch.databaseOpen dbpath) Notmuch.databaseDestroy (tagsToMessage nmtags (view mailId m'))
+  pure m'
 
 setNotmuchThreadTags
   :: (MonadError Error m, MonadIO m)
   => FilePath
+  -> [T.Text]
+  -> ([T.Text] -> NotmuchMail -> NotmuchMail)
   -> NotmuchThread
   -> m NotmuchThread
-setNotmuchThreadTags dbpath t = do
-  tgs <- toNotmuchTags (view thTags t)
+setNotmuchThreadTags dbpath tgs op t = do
   mgs <- getThreadMessages dbpath t
-  void $ bracketT (Notmuch.databaseOpen dbpath) Notmuch.databaseDestroy (go tgs mgs)
-  pure t
-    where go xs msgs db = traverse (\x -> tagsToMessage xs (view mailId x) db) msgs
+  traverse_ (setNotmuchMailTags dbpath tgs op) mgs
+  bracketT (Notmuch.databaseOpenReadOnly dbpath) Notmuch.databaseDestroy reloadThread
+    where reloadThread db = do
+            t' <- getThread db (view thId t)
+            liftIO $ threadToThread t'
+
 
 tagsToMessage
   :: (MonadError Error m, MonadIO m)

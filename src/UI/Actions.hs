@@ -437,12 +437,12 @@ applyItemTags
     :: (ListItemSetter a, Notmuch.ManageTags a, MonadIO f)
     => a
     -> [Text]
-    -> ([Text] -> a -> a)
+    -> ([Text] -> NotmuchMail -> NotmuchMail)
     -> AppState
     -> f (AppState -> AppState)
 applyItemTags m ts op s =
   let dbpath = view (asConfig . confNotmuch . nmDatabase) s
-  in either setError updateListItem <$> runExceptT (Notmuch.writeTags dbpath (op ts m))
+  in either setError updateListItem <$> runExceptT (Notmuch.writeTags dbpath ts op m)
 
 applyEditorMailTags :: (ListItemSetter a, Notmuch.ManageTags a) => a -> AppState -> IO (AppState -> AppState)
 applyEditorMailTags m s =

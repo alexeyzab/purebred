@@ -48,6 +48,7 @@ systemTests =
         , testHelp
         , testManageTagsOnMails
         , testManageTagsOnThreads
+        , testAddingTagsOnThreadsAddsThemToMails
         ]
 
 testManageTagsOnMails :: TestTree
@@ -110,10 +111,53 @@ testManageTagsOnThreads = withTmuxSession "manage tags on threads" $
     _ <- sendLiteralKeys "thread,only"
 
     liftIO $ step "apply"
-    sendKeys "Enter" (Literal "thread only")
+    sendKeys "Enter" (Literal "only thread")
 
     liftIO $ step "view mails to have same tags"
     sendKeys "Enter" (Literal "only thread")
+
+    pure ()
+
+testAddingTagsOnThreadsAddsThemToMails :: TestTree
+testAddingTagsOnThreadsAddsThemToMails = withTmuxSession "adding tags on threads adds them to mails" $
+  \step -> do
+    startApplication
+
+    -- setup
+    liftIO $ step "navigate to thread"
+    sendKeys "Down" (Literal "Item 2 of 3")
+    sendKeys "Down" (Literal "Item 3 of 3")
+
+    liftIO $ step "show thread mails"
+    sendKeys "Enter" (Literal "ViewMail")
+
+    liftIO $ step "open tag editor"
+    sendKeys "`" (Regex (buildAnsiRegex [] ["37"] ["40"] <> "inbox"))
+
+    liftIO $ step "delete all input"
+    sendKeys "C-u" (Regex (buildAnsiRegex [] ["37"] ["40"]))
+
+    liftIO $ step "enter new tag"
+    _ <- sendLiteralKeys "thread,only"
+
+    liftIO $ step "apply"
+    sendKeys "Enter" (Literal "BrowseMail")
+
+    liftIO $ step "thread tags shows new tags"
+    sendKeys "Escape" (Literal "inbox only thread")
+
+    -- here comes the test
+    liftIO $ step "archive the thread which sets archive tags"
+    sendKeys "a" (Literal "archive")
+
+    liftIO $ step "show thread mails"
+    sendKeys "Enter" (Literal "ViewMail")
+
+    liftIO $ step "navigate to second mail"
+    sendKeys "Down" (Literal "Item 2 of 2")
+
+    liftIO $ step "open tag editor and assert it's only archived"
+    sendKeys "`" (Regex (buildAnsiRegex [] ["37"] ["40"] <> "archive$"))
 
     pure ()
 
