@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DataKinds #-}
 
 module UI.Index.Keybindings where
@@ -30,6 +31,7 @@ browseThreadsKeybindings =
     , Keybinding (V.EvKey (V.KChar '`') []) (noop `chain'` (focus :: Action 'ManageThreadTags AppState) `chain` continue)
     , Keybinding (V.EvKey (V.KChar '\t') []) (switchComposeEditor `chain` continue)
     , Keybinding (V.EvKey (V.KChar '?') []) (noop `chain'` (focus :: Action 'Help AppState) `chain` continue)
+    , Keybinding (V.EvKey (V.KChar 'a') []) (removeTags ["inbox","unread"] `chain` addTags ["archive"] `chain` continue)
     ]
 
 searchThreadsKeybindings :: [Keybinding 'SearchThreads (Brick.Next AppState)]
